@@ -1,3 +1,41 @@
+const contractSource = `
+  contract MemeVote =
+
+    record meme =
+      { creatorAddress : address,
+        url            : string,
+        name           : string,
+        voteCount      : int }
+
+    record state =
+      { memes      : map(int, meme),
+        memesLength : int }
+
+    function init() =
+      { memes = {},
+        memesLength = 0 }
+
+    public function getMeme(index : int) : meme =
+      switch(Map.lookup(index, state.memes))
+        None    => abort("There was no meme with this index registered.")
+        Some(x) => x
+
+    public stateful function registerMeme(url' : string, name' : string) =
+      let meme = { creatorAddress = Call.caller, url = url', name = name', voteCount = 0}
+      let index = getMemesLength() + 1
+      put(state{ memes[index] = meme, memesLength = index })
+
+    public function getMemesLength() : int =
+      state.memesLength
+
+    public stateful function voteMeme(index : int) =
+      let meme = getMeme(index)
+      Chain.spend(meme.creatorAddress, Call.value)
+      let updatedVoteCount = meme.voteCount + Call.value
+      let updatedMemes = state.memes{ [index].voteCount = updatedVoteCount }
+      put(state{ memes = updatedMemes })
+`;
+
 const contractAddress ='ct_2qcqwwXmfLmZ3a18yvnv4p8ta9HGoyHRjCDvPMvyAqkuMRwzPD';
 var client = null;
 var memeArray = [];
@@ -11,45 +49,18 @@ function renderMemes() {
   $('#memeBody').html(rendered);
 }
 
-async function callStatic(func, args, types) {
-  const calledGet = await client.contractCallStatic(contractAddress,
-  'sophia-address', func, {args}).catch(e => console.error(e));
-
-  const decodedGet = await client.contractDecodeData(types,
-  calledGet.result.returnValue).catch(e => console.error(e));
-
-  return decodedGet;
-}
-
-async function contractCall(func, args, value, types) {
-  const calledSet = await client.contractCall(contractAddress, 'sophia-address',
-  contractAddress, func, {args, options: {amount:value}}).catch(async e => {
-    const decodedError = await client.contractDecodeData(types,
-    e.returnValue).catch(e => console.error(e));
-  });
-
-  return
-}
-
-
 window.addEventListener('load', async () => {
   $("#loader").show();
 
   client = await Ae.Aepp();
 
-  const getMemesLength = await callStatic('getMemesLength','()','int');
-  memesLength = getMemesLength.value;
+  const contract = await client.getContractInstance(contractSource, {contractAddress});
+  const calledGet = await contract.call('getMemesLength', {args:'()', callStatic: true}).catch(e => console.error(e));
+  console.log('calledGet', calledGet);
 
-  for (let i = 1; i <= memesLength; i++) {
-    const meme = await callStatic('getMeme',`(${i})`,'(address, string, string, int)');
-
-    memeArray.push({
-      creatorName: meme.value[2].value,
-      memeUrl: meme.value[1].value,
-      index: i,
-      votes: meme.value[3].value,
-    })
-  }
+  //Make another call to decode the data received in first call
+  const decodedGet = await calledGet.decode().catch(e => console.error(e));
+  console.log('decodedGet', decodedGet.value);
 
   renderMemes();
 
@@ -57,28 +68,16 @@ window.addEventListener('load', async () => {
 });
 
 jQuery("#memeBody").on("click", ".voteBtn", async function(event){
-  $("#loader").show();
-
   const value = $(this).siblings('input').val();
   const dataIndex = event.target.id;
-
-  await contractCall('voteMeme',`(${dataIndex})`,value,'(int)');
-
   const foundIndex = memeArray.findIndex(meme => meme.index == dataIndex);
   memeArray[foundIndex].votes += parseInt(value, 10);
-
   renderMemes();
-
-  $("#loader").hide();
 });
 
 $('#registerBtn').click(async function(){
-  $("#loader").show();
-
-  const name = ($('#regName').val()),
-        url = ($('#regUrl').val());
-
-  await contractCall('registerMeme',`("${url}","${name}")`,0,'(int)');
+  var name = ($('#regName').val()),
+      url = ($('#regUrl').val());
 
   memeArray.push({
     creatorName: name,
@@ -88,6 +87,4 @@ $('#registerBtn').click(async function(){
   })
 
   renderMemes();
-
-  $("#loader").hide();
 });
