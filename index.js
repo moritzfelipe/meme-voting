@@ -70,12 +70,17 @@ window.addEventListener('load', async () => {
   // const decodedGet = await calledGet.decode().catch(e => console.error(e));
   // console.log('decodedGet', decodedGet);
 
-  memeArray.push({
-    creatorName: meme.name,
-    memeUrl: meme.url,
-    index: i,
-    votes: meme.voteCount
-  })
+  for (let i = 1; i <= memesLength; i++) {
+
+    const meme = await callStatic('getMeme', [i]);
+
+    memeArray.push({
+      creatorName: meme.name,
+      memeUrl: meme.url,
+      index: i,
+      votes: meme.voteCount,
+    })
+  }
 
   renderMemes();
 
