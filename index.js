@@ -48,17 +48,34 @@ function renderMemes() {
   $('#memeBody').html(rendered);
 }
 
+async function callStatic(func, args) {
+  const contract = await client.getContractInstance(contractSource, {contractAddress});
+  const calledGet = await contract.call(func, args, {callStatic: true}).catch(e => console.error(e));
+  const decodedGet = await calledGet.decode().catch(e => console.error(e));
+
+  return decodedGet;
+}
+
 window.addEventListener('load', async () => {
   $("#loader").show();
 
   client = await Ae.Aepp();
 
-  const contract = await client.getContractInstance(contractSource, {contractAddress});
-  const calledGet = await contract.call('getMemesLength', [], {callStatic: true}).catch(e => console.error(e));
-  console.log('calledGet', calledGet);
+  memesLength = await callStatic('getMemesLength', []);
 
-  const decodedGet = await calledGet.decode().catch(e => console.error(e));
-  console.log('decodedGet', decodedGet);
+  // const contract = await client.getContractInstance(contractSource, {contractAddress});
+  // const calledGet = await contract.call('getMemesLength', [], {callStatic: true}).catch(e => console.error(e));
+  // console.log('calledGet', calledGet);
+  //
+  // const decodedGet = await calledGet.decode().catch(e => console.error(e));
+  // console.log('decodedGet', decodedGet);
+
+  memeArray.push({
+    creatorName: meme.name,
+    memeUrl: meme.url,
+    index: i,
+    votes: meme.voteCount
+  })
 
   renderMemes();
 
