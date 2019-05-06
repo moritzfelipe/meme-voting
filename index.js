@@ -49,31 +49,18 @@ function renderMemes() {
   $('#memeBody').html(rendered);
 }
 
-async function callStatic(func, args) {
-  //Make a call to get data of smart contract func, with specefied arguments
-  const contract = await client.getContractInstance(contractSource, {contractAddress});
-  const calledGet = await contract.call('getMemesLength', [], {callStatic: true}).catch(e => console.error(e));
-  //Make another call to decode the data received in first call
-  const decodedGet = await calledGet.decode().catch(e => console.error(e));
-
-  return decodedGet;
-}
-
-
 window.addEventListener('load', async () => {
   $("#loader").show();
 
   client = await Ae.Aepp();
 
-  // const contract = await client.getContractInstance(contractSource, {contractAddress});
-  // const calledGet = await contract.call('getMemesLength', {args:'()', callStatic: true}).catch(e => console.error(e));
-  // console.log('calledGet', calledGet);
-  //
-  // //Make another call to decode the data received in first call
-  // const decodedGet = await calledGet.decode().catch(e => console.error(e));
-  // console.log('decodedGet', decodedGet.value);
+  const contract = await client.getContractInstance(contractSource, {contractAddress});
+  const calledGet = await contract.call('getMemesLength', [], {callStatic: true}).catch(e => console.error(e));
+  console.log('calledGet', calledGet);
 
-  memesLength = await callStatic('getMemesLength', []);
+  //Make another call to decode the data received in first call
+  const decodedGet = await calledGet.decode().catch(e => console.error(e));
+  console.log('decodedGet', decodedGet.value);
 
   console.log(memesLength);
 
