@@ -52,7 +52,7 @@ function renderMemes() {
 async function callStatic(func, args) {
   //Make a call to get data of smart contract func, with specefied arguments
   const contract = await client.getContractInstance(contractSource, {contractAddress});
-  const calledGet = await contract.call(func, args, {callStatic: true}).catch(e => console.error(e));
+  const calledGet = await contract.call('getMemesLength', [], {callStatic: true}).catch(e => console.error(e));
   //Make another call to decode the data received in first call
   const decodedGet = await calledGet.decode().catch(e => console.error(e));
 
