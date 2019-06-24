@@ -60,26 +60,26 @@ function renderMemes() {
   $('#memeBody').html(rendered);
 }
 
-//Create a asynchronous read call for our smart contract
-async function callStatic(func, args) {
-  //Create a new contract instance that we can interact with
-  const contract = await client.getContractInstance(contractSource, {contractAddress});
-  //Make a call to get data of smart contract func, with specefied arguments
-  const calledGet = await contract.call(func, args, {callStatic: true}).catch(e => console.error(e));
-  //Make another call to decode the data received in first call
-  const decodedGet = await calledGet.decode().catch(e => console.error(e));
-
-  return decodedGet;
-}
-
-//Create a asynchronous write call for our smart contract
-async function contractCall(func, args, value) {
-  const contract = await client.getContractInstance(contractSource, {contractAddress});
-  //Make a call to write smart contract func, with aeon value input
-  const calledSet = await contract.call(func, args, {amount: value}).catch(e => console.error(e));
-
-  return calledSet;
-}
+// //Create a asynchronous read call for our smart contract
+// async function callStatic(func, args) {
+//   //Create a new contract instance that we can interact with
+//   const contract = await client.getContractInstance(contractSource, {contractAddress});
+//   //Make a call to get data of smart contract func, with specefied arguments
+//   const calledGet = await contract.call(func, args, {callStatic: true}).catch(e => console.error(e));
+//   //Make another call to decode the data received in first call
+//   const decodedGet = await calledGet.decode().catch(e => console.error(e));
+//
+//   return decodedGet;
+// }
+//
+// //Create a asynchronous write call for our smart contract
+// async function contractCall(func, args, value) {
+//   const contract = await client.getContractInstance(contractSource, {contractAddress});
+//   //Make a call to write smart contract func, with aeon value input
+//   const calledSet = await contract.call(func, args, {amount: value}).catch(e => console.error(e));
+//
+//   return calledSet;
+// }
 
 //Execute main function
 window.addEventListener('load', async () => {
