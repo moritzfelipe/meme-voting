@@ -40,6 +40,8 @@ const contractSource = `
 const contractAddress = 'ct_wu1xGX6YDg5ViyAeXuYYMrxKE2L3sG9tQ8JdyMt3RJ2z7MP6J';
 //Create variable for client so it can be used in different functions
 var client = null;
+// Global contract object
+var contractInstance = null;
 //Create a new global array for the memes
 var memeArray = [];
 //Create a new variable to store the length of the meme globally
@@ -47,7 +49,7 @@ var memesLength = 0;
 
 function renderMemes() {
   //Order the memes array so that the meme with the most votes is on top
-  memeArray = memeArray.sort(function(a,b){return b.votes-a.votes})
+  memeArray = memeArray.sort((a, b) => b.votes - a.votes);
   //Get the template we created in a block scoped variable
   let template = $('#template').html();
   //Use mustache parse function to speeds up on future uses
@@ -58,27 +60,6 @@ function renderMemes() {
   $('#memeBody').html(rendered);
 }
 
-//Create a asynchronous read call for our smart contract
-async function callStatic(func, args) {
-  //Create a new contract instance that we can interact with
-  const contract = await client.getContractInstance(contractSource, {contractAddress});
-  //Make a call to get data of smart contract func, with specefied arguments
-  const calledGet = await contract.call(func, args, {callStatic: true}).catch(e => console.error(e));
-  //Make another call to decode the data received in first call
-  const decodedGet = await calledGet.decode().catch(e => console.error(e));
-
-  return decodedGet;
-}
-
-//Create a asynchronous write call for our smart contract
-async function contractCall(func, args, value) {
-  const contract = await client.getContractInstance(contractSource, {contractAddress});
-  //Make a call to write smart contract func, with aeon value input
-  const calledSet = await contract.call(func, args, {amount: value}).catch(e => console.error(e));
-
-  return calledSet;
-}
-
 //Execute main function
 window.addEventListener('load', async () => {
   //Display the loader animation so the user knows that something is happening
@@ -87,15 +68,18 @@ window.addEventListener('load', async () => {
   //Initialize the Aepp object through aepp-sdk.browser.js, the base app needs to be running.
   client = await Ae.Aepp();
 
+  //Initialize contract instance
+  contractInstance = await client.getContractInstance(contractSource, {contractAddress});
+  
   //First make a call to get to know how may memes have been created and need to be displayed
   //Assign the value of meme length to the global variable
-  memesLength = await callStatic('getMemesLength', []);
+  memesLength = (await contractInstance.methods.getMemesLength()).decodedResult;
 
   //Loop over every meme to get all their relevant information
   for (let i = 1; i <= memesLength; i++) {
 
     //Make the call to the blockchain to get all relevant information on the meme
-    const meme = await callStatic('getMeme', [i]);
+    const meme = (await contractInstance.methods.getMeme(i)).decodedResult;
 
     //Create meme object with  info from the call and push into the array with all memes
     memeArray.push({
@@ -122,7 +106,7 @@ jQuery("#memeBody").on("click", ".voteBtn", async function(event){
       index = event.target.id;
 
   //Promise to execute execute call for the vote meme function with let values
-  await contractCall('voteMeme', [index], value);
+  await contractInstance.methods.voteMeme(index, { amount: value }).catch(console.error);
 
   //Hide the loading animation after async calls return a value
   const foundIndex = memeArray.findIndex(meme => meme.index == event.target.id);
@@ -141,7 +125,7 @@ $('#registerBtn').click(async function(){
         url = ($('#regUrl').val());
 
   //Make the contract call to register the meme with the newly passed values
-  await contractCall('registerMeme', [url, name], 0);
+  await contractInstance.methods.registerMeme(url, name);
 
   //Add the new created memeobject to our memearray
   memeArray.push({
@@ -149,7 +133,7 @@ $('#registerBtn').click(async function(){
     memeUrl: url,
     index: memeArray.length+1,
     votes: 0,
-  })
+  });
 
   renderMemes();
   $("#loader").hide();
