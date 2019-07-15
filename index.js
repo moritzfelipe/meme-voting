@@ -37,11 +37,9 @@ const contractSource = `
 `;
 
 //Address of the meme voting smart contract on the testnet of the aeternity blockchain
-const contractAddress = 'ct_2qcqwwXmfLmZ3a18yvnv4p8ta9HGoyHRjCDvPMvyAqkuMRwzPD';
+const contractAddress = 'ct_wu1xGX6YDg5ViyAeXuYYMrxKE2L3sG9tQ8JdyMt3RJ2z7MP6J';
 //Create variable for client so it can be used in different functions
 var client = null;
-// Global contract object
-var contractInstance = null
 //Create a new global array for the memes
 var memeArray = [];
 //Create a new variable to store the length of the meme globally
@@ -60,26 +58,26 @@ function renderMemes() {
   $('#memeBody').html(rendered);
 }
 
-// //Create a asynchronous read call for our smart contract
-// async function callStatic(func, args) {
-//   //Create a new contract instance that we can interact with
-//   const contract = await client.getContractInstance(contractSource, {contractAddress});
-//   //Make a call to get data of smart contract func, with specefied arguments
-//   const calledGet = await contract.call(func, args, {callStatic: true}).catch(e => console.error(e));
-//   //Make another call to decode the data received in first call
-//   const decodedGet = await calledGet.decode().catch(e => console.error(e));
-//
-//   return decodedGet;
-// }
-//
-// //Create a asynchronous write call for our smart contract
-// async function contractCall(func, args, value) {
-//   const contract = await client.getContractInstance(contractSource, {contractAddress});
-//   //Make a call to write smart contract func, with aeon value input
-//   const calledSet = await contract.call(func, args, {amount: value}).catch(e => console.error(e));
-//
-//   return calledSet;
-// }
+//Create a asynchronous read call for our smart contract
+async function callStatic(func, args) {
+  //Create a new contract instance that we can interact with
+  const contract = await client.getContractInstance(contractSource, {contractAddress});
+  //Make a call to get data of smart contract func, with specefied arguments
+  const calledGet = await contract.call(func, args, {callStatic: true}).catch(e => console.error(e));
+  //Make another call to decode the data received in first call
+  const decodedGet = await calledGet.decode().catch(e => console.error(e));
+
+  return decodedGet;
+}
+
+//Create a asynchronous write call for our smart contract
+async function contractCall(func, args, value) {
+  const contract = await client.getContractInstance(contractSource, {contractAddress});
+  //Make a call to write smart contract func, with aeon value input
+  const calledSet = await contract.call(func, args, {amount: value}).catch(e => console.error(e));
+
+  return calledSet;
+}
 
 //Execute main function
 window.addEventListener('load', async () => {
@@ -88,24 +86,16 @@ window.addEventListener('load', async () => {
 
   //Initialize the Aepp object through aepp-sdk.browser.js, the base app needs to be running.
   client = await Ae.Aepp();
-  //Init contract instance
-  // Contract instance under 'methods' prop contain js proto function for each of you contract function
-  // exm:
-  // await contractInstance.methods.voteMeme(index, { amount: 100 }) // Last arguments alway 'options'
-  // this will automaticaly decide to call transaction on-chain or use callStatic based on If this fn stateful or not
-  // Also you can manually control that:
-  // await contractInstance.methods.voteMeme.get(index, { amount: 100 }) // Use call Static
-  // await contractInstance.methods.voteMeme.send(index, { amount: 100 }) // Use on-chain
-  contractInstance = await client.getContractInstance(contractSource, {contractAddress});
+
   //First make a call to get to know how may memes have been created and need to be displayed
   //Assign the value of meme length to the global variable
-  memesLength = contractInstance.methods.getMemesLength() // await callStatic('getMemesLength', []);
+  memesLength = await callStatic('getMemesLength', []);
 
   //Loop over every meme to get all their relevant information
   for (let i = 1; i <= memesLength; i++) {
 
     //Make the call to the blockchain to get all relevant information on the meme
-    const meme = await contractInstance.methods.getMeme() //await callStatic('getMeme', [i]);
+    const meme = await callStatic('getMeme', [i]);
 
     //Create meme object with  info from the call and push into the array with all memes
     memeArray.push({
@@ -132,7 +122,7 @@ jQuery("#memeBody").on("click", ".voteBtn", async function(event){
       index = event.target.id;
 
   //Promise to execute execute call for the vote meme function with let values
-  await contractInstance.voteMeme(index, { amount: value }) // await contractCall('voteMeme', [index], value);
+  await contractCall('voteMeme', [index], value);
 
   //Hide the loading animation after async calls return a value
   const foundIndex = memeArray.findIndex(meme => meme.index == event.target.id);
@@ -151,8 +141,7 @@ $('#registerBtn').click(async function(){
         url = ($('#regUrl').val());
 
   //Make the contract call to register the meme with the newly passed values
-  // await contractCall('registerMeme', [url, name], 0);
-  await contractInstance.methods.registerMeme(url, name, { amount: 0 }) //
+  await contractCall('registerMeme', [url, name], 0);
 
   //Add the new created memeobject to our memearray
   memeArray.push({
