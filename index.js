@@ -1,34 +1,34 @@
 const contractSource = `
   contract MemeVote =
-
+  
     record meme =
       { creatorAddress : address,
         url            : string,
         name           : string,
         voteCount      : int }
-
+        
     record state =
       { memes      : map(int, meme),
         memesLength : int }
-
-    function init() =
+        
+    entrypoint init() =
       { memes = {},
         memesLength = 0 }
-
-    public function getMeme(index : int) : meme =
+        
+    entrypoint getMeme(index : int) : meme =
       switch(Map.lookup(index, state.memes))
         None    => abort("There was no meme with this index registered.")
         Some(x) => x
-
-    public stateful function registerMeme(url' : string, name' : string) =
+        
+    stateful entrypoint registerMeme(url' : string, name' : string) =
       let meme = { creatorAddress = Call.caller, url = url', name = name', voteCount = 0}
       let index = getMemesLength() + 1
       put(state{ memes[index] = meme, memesLength = index })
-
-    public function getMemesLength() : int =
+      
+    entrypoint getMemesLength() : int =
       state.memesLength
-
-    public stateful function voteMeme(index : int) =
+      
+    stateful entrypoint voteMeme(index : int) =
       let meme = getMeme(index)
       Chain.spend(meme.creatorAddress, Call.value)
       let updatedVoteCount = meme.voteCount + Call.value
@@ -37,7 +37,7 @@ const contractSource = `
 `;
 
 //Address of the meme voting smart contract on the testnet of the aeternity blockchain
-const contractAddress = 'ct_wu1xGX6YDg5ViyAeXuYYMrxKE2L3sG9tQ8JdyMt3RJ2z7MP6J';
+const contractAddress = 'ct_SGdtb4JkXxycsTBU52JW9QnGPg4swPrNMyeREo33vtRq1zQKx';
 //Create variable for client so it can be used in different functions
 var client = null;
 // Global contract object
